@@ -87,7 +87,10 @@ def nn_train(trainData, trainLabels, devData, devLabels):
     params['b1']=b1
     params['W2']=W2
     params['b2']=b2
-    forward_prop(trainData,trainLabels,params)
+    for b_index in range(trainData.shape[0]/BATCH):
+        row_start=b_index*BATCH
+        row_end=(b_index+1)*BATCH
+        forward_prop(trainData[row_start:row_end,:],trainLabels[row_start:row_end,:],params)
     ### END YOUR CODE
 
     return params
