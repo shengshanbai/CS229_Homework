@@ -19,7 +19,9 @@ def softmax(x):
     Use tricks from previous assignment to avoid overflow
     """
 	### YOUR CODE HERE
-
+    s=np.exp(x);
+    for c_index in range(s.shape[1]):
+        s[:,c_index]=np.true_divide(s[:,c_index],np.sum(s[:,c_index]))
 	### END YOUR CODE
     return s
 
@@ -28,7 +30,7 @@ def sigmoid(x):
     Compute the sigmoid function for the input here.
     """
     ### YOUR CODE HERE
-    s=1/(1+math.exp(-x))
+    s=1/(1+np.exp(-x))
     ### END YOUR CODE
     return s
 
@@ -42,9 +44,16 @@ def forward_prop(data, labels, params):
     b2 = params['b2']
 
     ### YOUR CODE HERE
-    hidden_x=np.dot(W1,np.transpose(data))+np.dot(b1,np.ones((1,data.shape[0])))
+    data_num=data.shape[0];
+    hidden_x=np.dot(W1,np.transpose(data))+np.dot(b1,np.ones((1,data_num)))
     h=sigmoid(hidden_x)
     ### END YOUR CODE
+    y_x=np.dot(W2,h)+np.dot(b2,np.ones((1,data_num)))
+    y=softmax(y_x)
+    cost=0;
+    for i in range(data_num):
+        cost=cost-np.dot(labels[i,:],np.log(y[:,i]))
+    cost=cost/data_num;
     return h, y, cost
 
 def backward_prop(data, labels, params):
@@ -57,6 +66,11 @@ def backward_prop(data, labels, params):
     b2 = params['b2']
 
     ### YOUR CODE HERE
+    (h, y, cost) = forward_prop(data, labels, params)
+    print("after forward cost:", cost)
+    (data_num,data_col)=data.shape
+    
+
 
     ### END YOUR CODE
 
@@ -87,10 +101,10 @@ def nn_train(trainData, trainLabels, devData, devLabels):
     params['b1']=b1
     params['W2']=W2
     params['b2']=b2
-    for b_index in range(trainData.shape[0]/BATCH):
+    for b_index in range(int(trainData.shape[0]/BATCH)):
         row_start=b_index*BATCH
         row_end=(b_index+1)*BATCH
-        forward_prop(trainData[row_start:row_end,:],trainLabels[row_start:row_end,:],params)
+        backward_prop(trainData[row_start:row_end,:],trainLabels[row_start:row_end,:],params)
     ### END YOUR CODE
 
     return params
