@@ -67,11 +67,42 @@ def backward_prop(data, labels, params):
 
     ### YOUR CODE HERE
     (h, y, cost) = forward_prop(data, labels, params)
-    print("after forward cost:", cost)
     (data_num,data_col)=data.shape
-    
-
-
+    (label_num,label_col)=labels.shape
+    gradW2=np.zeros((NUM_OUTPUT,NUM_HIDDEN))
+    gradb2=np.zeros((NUM_OUTPUT,1))
+    gradW1=np.zeros((NUM_HIDDEN,NUM_INPUT))
+    gradb1=np.zeros((NUM_HIDDEN,1))
+    for label_index in range(label_num):
+        label_item=labels[label_index,:]
+        k=np.where(label_item==1)[0][0]
+        grad_z = np.zeros((NUM_OUTPUT, 1))
+        # compute grad_z
+        for index in range(NUM_OUTPUT):
+            if index == k:
+                grad_z[index,0]=(y[index,label_index]-1)
+            else:
+                grad_z[index,0]=y[index,label_index]
+        # compute grad_w2
+        h_item=h[:,label_index].reshape(NUM_HIDDEN,1)
+        gradW2+=np.dot(grad_z,np.transpose(h_item))
+        gradb2+=grad_z
+        #compute grad_h
+        grad_h=np.zeros((NUM_HIDDEN,1))
+        for z_index in range(grad_z.size):
+            for h_index in range(grad_h.size):
+                grad_h[h_index,0]+=grad_z[z_index,0]*W2[z_index,h_index]
+        #compute grad_W1
+        for w1_row in range(gradW1.shape[0]):
+            for w1_col in range(gradW1.shape[1]):
+                gradW1[w1_row,w1_col]+=(grad_h[w1_row,0]*h_item[w1_row,0]*(1-h_item[w1_row,0])*data[label_index,w1_col])
+        #compute grad_b1
+        for b1_row in range(gradb1.shape[0]):
+            gradb1[b1_row,0]+=(grad_h[b1_row,0]*h_item[b1_row,0]*(1-h_item[b1_row,0]))
+    gradW1=gradW1/data_num
+    gradW2=gradW2/data_num
+    gradb1=gradb1/data_num
+    gradb2=gradb2/data_num
     ### END YOUR CODE
 
     grad = {}
@@ -101,10 +132,17 @@ def nn_train(trainData, trainLabels, devData, devLabels):
     params['b1']=b1
     params['W2']=W2
     params['b2']=b2
-    for b_index in range(int(trainData.shape[0]/BATCH)):
-        row_start=b_index*BATCH
-        row_end=(b_index+1)*BATCH
-        backward_prop(trainData[row_start:row_end,:],trainLabels[row_start:row_end,:],params)
+    for i in range(30):
+        (h, y, cost) = forward_prop(trainData, trainLabels, params)
+        print('the iter count:',i,' cost:',cost)
+        for b_index in range(int(trainData.shape[0]/BATCH)):
+            row_start=b_index*BATCH
+            row_end=(b_index+1)*BATCH
+            grad=backward_prop(trainData[row_start:row_end,:],trainLabels[row_start:row_end,:],params)
+            params['W1']=params['W1']-learning_rate*grad['W1']
+            params['W2']=params['W2']-learning_rate*grad['W2']
+            params['b1']=params['b1']-learning_rate*grad['b1']
+            params['b2']=params['b2']-learning_rate*grad['b2']
     ### END YOUR CODE
 
     return params
