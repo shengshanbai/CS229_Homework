@@ -2,6 +2,7 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 import math
+import json
 
 NUM_INPUT=784
 NUM_HIDDEN=300
@@ -53,7 +54,8 @@ def forward_prop(data, labels, params):
     cost=0;
     for i in range(data_num):
         cost=cost-np.dot(labels[i,:],np.log(y[:,i]))
-    cost=cost/data_num;
+    labmda=0.00005
+    cost=cost/data_num+labmda*(np.sum(np.power(W1,2))+np.sum(np.power(W2,2)));
     return h, y, cost
 
 def backward_prop(data, labels, params):
@@ -86,8 +88,9 @@ def backward_prop(data, labels, params):
         gradW1+=np.dot(grad_h*h_item*(1-h_item),data[label_index,:].reshape(1,NUM_INPUT))
         #compute grad_b1
         gradb1+=(grad_h*h_item*(1-h_item))
-    gradW1=gradW1/data_num
-    gradW2=gradW2/data_num
+    labmda = 0.00005
+    gradW1=gradW1/data_num+2*labmda*W1
+    gradW2=gradW2/data_num+2*labmda*W2
     gradb1=gradb1/data_num
     gradb2=gradb2/data_num
     ### END YOUR CODE
@@ -118,9 +121,20 @@ def nn_train(trainData, trainLabels, devData, devLabels):
     params['b1']=b1
     params['W2']=W2
     params['b2']=b2
+    iterNum=[]
+    trainCost=[]
+    trainAccuracy=[]
+    devCost=[]
+    devAccuracy=[]
     for i in range(30):
         (h, y, cost) = forward_prop(trainData, trainLabels, params)
         print('the iter count:',i,' cost:',cost)
+        iterNum.append(i)
+        trainCost.append(cost)
+        trainAccuracy.append(compute_accuracy(y.T,trainLabels))
+        (h,y,cost)=forward_prop(devData,devLabels,params)
+        devCost.append(cost)
+        devAccuracy.append(compute_accuracy(y.T,devLabels))
         for b_index in range(int(trainData.shape[0]/BATCH)):
             row_start=b_index*BATCH
             row_end=(b_index+1)*BATCH
@@ -130,12 +144,18 @@ def nn_train(trainData, trainLabels, devData, devLabels):
             params['b1']=params['b1']-learning_rate*grad['b1']
             params['b2']=params['b2']-learning_rate*grad['b2']
     ### END YOUR CODE
-
+    plt.figure(1)
+    plt.plot(iterNum,trainCost)
+    plt.plot(iterNum,devCost,color="r")
+    plt.figure(2)
+    plt.plot(iterNum, trainAccuracy)
+    plt.plot(iterNum, devAccuracy, color="r")
+    plt.show()
     return params
 
 def nn_test(data, labels, params):
     h, output, cost = forward_prop(data, labels, params)
-    accuracy = compute_accuracy(output, labels)
+    accuracy = compute_accuracy(output.T, labels)
     return accuracy
 
 def compute_accuracy(output, labels):
@@ -168,14 +188,13 @@ def main():
     testData, testLabels = readData('mnist/images_test.csv', 'mnist/labels_test.csv')
     testLabels = one_hot_labels(testLabels)
     testData = (testData - mean) / std
-	
     params = nn_train(trainData, trainLabels, devData, devLabels)
-
-
-    readyForTesting = False
+    np.savez("params",W1=params['W1'],W2=params['W2'],b1=params['b1'],b2=params['b2'])
+    params=np.load('params.npz')
+    readyForTesting = True
     if readyForTesting:
         accuracy = nn_test(testData, testLabels, params)
-    print('Test accuracy: %f' % accuracy)
+        print('Test accuracy: %f' % accuracy)
 
 if __name__ == '__main__':
     main()
