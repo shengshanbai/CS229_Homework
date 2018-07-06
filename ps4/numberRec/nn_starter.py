@@ -74,37 +74,23 @@ def backward_prop(data, labels, params):
     gradW1=np.zeros((NUM_HIDDEN,NUM_INPUT))
     gradb1=np.zeros((NUM_HIDDEN,1))
     for label_index in range(label_num):
-        label_item=labels[label_index,:]
-        k=np.where(label_item==1)[0][0]
-        grad_z = np.zeros((NUM_OUTPUT, 1))
         # compute grad_z
-        for index in range(NUM_OUTPUT):
-            if index == k:
-                grad_z[index,0]=(y[index,label_index]-1)
-            else:
-                grad_z[index,0]=y[index,label_index]
+        grad_z=y[:,label_index].reshape(NUM_OUTPUT,1)-labels[label_index,:].reshape(NUM_OUTPUT,1)
         # compute grad_w2
         h_item=h[:,label_index].reshape(NUM_HIDDEN,1)
         gradW2+=np.dot(grad_z,np.transpose(h_item))
         gradb2+=grad_z
         #compute grad_h
-        grad_h=np.zeros((NUM_HIDDEN,1))
-        for z_index in range(grad_z.size):
-            for h_index in range(grad_h.size):
-                grad_h[h_index,0]+=grad_z[z_index,0]*W2[z_index,h_index]
+        grad_h=np.dot(np.transpose(grad_z),W2).T
         #compute grad_W1
-        for w1_row in range(gradW1.shape[0]):
-            for w1_col in range(gradW1.shape[1]):
-                gradW1[w1_row,w1_col]+=(grad_h[w1_row,0]*h_item[w1_row,0]*(1-h_item[w1_row,0])*data[label_index,w1_col])
+        gradW1+=np.dot(grad_h*h_item*(1-h_item),data[label_index,:].reshape(1,NUM_INPUT))
         #compute grad_b1
-        for b1_row in range(gradb1.shape[0]):
-            gradb1[b1_row,0]+=(grad_h[b1_row,0]*h_item[b1_row,0]*(1-h_item[b1_row,0]))
+        gradb1+=(grad_h*h_item*(1-h_item))
     gradW1=gradW1/data_num
     gradW2=gradW2/data_num
     gradb1=gradb1/data_num
     gradb2=gradb2/data_num
     ### END YOUR CODE
-
     grad = {}
     grad['W1'] = gradW1
     grad['W2'] = gradW2
